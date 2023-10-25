@@ -1,0 +1,173 @@
+import mysql.connector as bd
+import propriedades
+
+dados = propriedades.dados
+
+
+def conectarBd():
+    return bd.connect(
+        dados["User"],
+        dados["Password"],
+        dados["Host"],
+        dados["Database"]
+    )
+
+
+def desconectarBd(connection):
+    connection.close()
+
+
+def criarTable():
+    conexao = conectarBd()
+    cursor = conexao.cursor()
+    query = """
+        CREATE TABLE IF NOT EXISTS manifestacoes(
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(100),
+            email VARCHAR(100),
+            descricao VARCHAR(100),
+            status VARCHAR(100),
+            responsavel VARCHAR(100),
+            prioridade VARCHAR(100),
+            categoria VARCHAR(100),
+            atribuido_a Varchar(100)
+        )
+    """
+    cursor.execute(query)
+    desconectarBd(conexao)
+
+
+def checarId(id):
+    try:
+        conection = conectarBd()
+        cursor = conection.cursor()
+        checar_query = "SELECT id FROM manifestacoes WHERE id = %s"
+        cursor.execute(checar_query, (id,))
+        resultado = cursor.fetchone()
+        desconectarBd(conection)
+        return resultado is not None
+    except bd.Error as e:
+        print(f"Erro ao listar as manifestacoes: {e}")
+
+
+def listar():
+    try:
+        conexao = conectarBd()
+        cursor = conexao.cursor()
+        query = "SELECT * FROM manifestacoes"
+        cursor.execute(query)
+        resultado = cursor.fetchall()
+        desconectarBd(conexao)
+        if not resultado:
+            print("Não há manifestações no momento")
+
+        return resultado
+    except bd.Error as e:
+        print(f"Erro ao listar manifestações {e}")
+        return "400"
+
+
+def cadastrar(manifestacao):
+    try:
+        conexao = conectarBd()
+        cursor = conexao.cursor()
+        query = """
+            INSERT INTO manifestacoes (
+                nome, email, descricao, status,
+                responsavel, prioridade, categoria, atribuido_a
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        values = (manifestacao["nome"], manifestacao["email"],
+                  manifestacao["descricao"], manifestacao["status"],
+                  manifestacao["responsavel"], manifestacao["prioridade"],
+                  manifestacao["categoria"], manifestacao["atribuido_a"],
+                  )
+        cursor.execute(query, values)
+        conexao.commit()
+        desconectarBd(conexao)
+        print(f"Cadastro da manifestação {manifestacao['nome']} bem sucedido!")
+        return "201"
+
+    except bd.Error as e:
+        print(f"Erro ao cadastrar manifestações {e}")
+        return "400"
+
+
+def excluir(id):
+    if checarId(id):
+        try:
+            conection = conectarBd()
+            cursor = conection.cursor()
+            excluir_query = "DELETE FROM manifestacoes WHERE id = %s"
+            cursor.execute(excluir_query, (id,))
+            conection.commit()
+            print(f"Sucesso ao excluir manifestacao de id {id}")
+            desconectarBd(conection)
+            return "200"
+
+        except bd.Error as e:
+            print(f"Erro ao excluir a manifestacao: {e}")
+            return "400"
+    else:
+        print("Id invalido!")
+        return "403"
+
+
+def atualizar(valores_novos, id):
+    if checarId(id):
+        try:
+            conection = conectarBd()
+            cursor = conection.cursor()
+            atualizar_query = """
+                UPDATE manifestacoes
+                SET
+                    nome = %s,
+                    email_manifestante = %s,
+                    descricao = %s,
+                    status = %s,
+                    responsavel = %s,
+                    prioridade = %s,
+                    categoria = %s,
+                    atribuido_a = %s
+                WHERE id = %s
+            """
+
+            valores = [valores_novos["nome"], valores_novos["email_manifestante"],
+                       valores_novos["descricao"], valores_novos["status"],
+                       valores_novos["responsavel"], valores_novos["prioridade"],
+                       valores_novos["categoria"], valores_novos["atribuido_a"],
+                       id]
+
+            cursor.execute(atualizar_query, valores)
+            conection.commit()
+            desconectarBd(conection)
+            print(f"Sucesso ao atualizar os dados da manifestacao {id}")
+            return "200"
+
+        except bd.Error as e:
+            print(f"Erro ao atualizar a manifestacao: {e}")
+            return "400"
+    else:
+        print("Id invalido!")
+        return "403"
+
+
+def pegarPorId(id):
+    if checarId(id):
+        try:
+            conexao = conectarBd()
+            cursor = conexao.cursor()
+            query = "SELECT * FROM manifestacoes WHERE id = " + str(id)
+            cursor.execute(query)
+            resultado = cursor.fetchone()
+            desconectarBd(conexao)
+            return resultado
+        except bd.Error as e:
+            print(f"Erro ao listar as manifestacoes: {e}")
+            return "400"
+    else:
+        print("Id invalido!")
+        return "403"
+
+
+criarTable()
