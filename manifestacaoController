@@ -1,0 +1,49 @@
+from flask import Flask, request, jsonify
+from flask_restful import Resource, Api
+import manifestacaoService as service
+
+app = Flask(__name__)
+api = Api(app)
+
+manifestacao = {
+    "nome": "",
+    "email": "",
+    "descricao": "",
+    "status": "",
+    "responsavel": "",
+    "prioridade": "",
+    "categoria": "",
+    "atribuido_a": ""
+}
+
+
+class Manifestacao(Resource):
+    def post(self):
+        dados = request.json
+        status = service.cadastrar(dados)
+        return {"status": status}
+
+    def get(self):
+        resultado = service.listar()
+        return jsonify(resultado)
+
+    class ManifestacaoPorId(Resource):
+        def delete(self, id):
+            status = service.excluir(id)
+            return {"status": status}
+
+        def put(self, id):
+            dados = request.json
+            status = service.atualizar(dados, id)
+            return {"status": status}
+
+        def get(self, id):
+            resultado = service.pegarPorId(id)
+            return jsonify(resultado)
+
+
+api.add_resource(Manifestacao, "/manifestacao")
+api.add_resource(Manifestacao.ManifestacaoPorId, "/manifestacao/<id>")
+
+if __name__ == "__main__":
+    app.run()
